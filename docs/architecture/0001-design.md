@@ -1,20 +1,20 @@
 # 0001: AI Budget design record
 
-Status: **draft** (2026-11-10). Nothing is built yet. Task K334, P1, part of the scale plan.
+Status: **draft** (2026-11-10). Nothing is built yet.
 
 ## Context
 
-Console ADR 0006 (captive-origins-console `docs/architecture/0006-api-cost-ledger.md`, Spend Guard, 2026-11-10) set out how Captive Origins records Claude API spend and stops jobs before they eat the month:
+The platform's API cost ledger decision (2026-11-10) set out how Captive Origins records Claude API spend and stops jobs before they eat the month:
 - a ledger, one record per call;
 - caps per run, per job per day, per day and per month, checked before each call;
 - a dated price table;
 - a clear pause when the prepaid credits run out.
 
-The owner, D37 (2026-11-10): build it as its own plugin, "AI Budget", `@extantape/payload-plugin-ai-budget`, agnostic of provider. The Site lead wires it in and closes K250 on top of it.
+The owner decided on 2026-11-10 to build it as its own plugin, AI Budget, `@extantape/payload-plugin-ai-budget`, agnostic of provider. The site that uses it wires it in on top of it.
 
-His words on running out, from ADR 0006 section 6: "Off but a notification that Claude services can't run until a prepaid amount is put in there. After first time it happens, still notify but suggest capped amount per month if regular for 3 months".
+On running out, the owner chose: auto-reload off, and a notice that Claude services can't run until a prepaid amount is added. After the first time, keep the notice, and if it happens 3 months in a row, suggest a capped monthly amount.
 
-MIT. Agnostic (D2): it imports no AI SDK and none of our other plugins. A provider is an adapter of a few lines; Anthropic's ships with it as an export.
+MIT. Agnostic: it imports no AI SDK and none of our other plugins. A provider is an adapter of a few lines; Anthropic's ships with it as an export.
 
 ## Decision
 
@@ -58,9 +58,9 @@ const answer = await withAiBudget(payload, { job: 'translate-content', run: runI
    - on success, the usage and cost through the provider adapter;
    - on the provider's "no credit" error, a `no-credit` record. Credits are now out. Throw `CreditsOut`.
    - on any other error, an `error` record with zero tokens. Rethrow.
-5. **If the ledger can't be read, refuse** (fail closed), as ADR 0006 says.
+5. **If the ledger can't be read, refuse** (fail closed), as the cost ledger design says.
 
-**Overshoot:** two calls at the same moment can both pass the check, so a cap can be overshot by one call per concurrent worker. ADR 0006 accepts this, and the README says so.
+**Overshoot:** two calls at the same moment can both pass the check, so a cap can be overshot by one call per concurrent worker. The cost ledger design accepts this, and the README says so.
 
 ## 3. Caps, from the site
 
@@ -82,7 +82,7 @@ caps: {
 ## 4. Prices
 
 - The site passes a dated table: `{ date: '2026-11-10', models: { 'claude-haiku-5-5': { input, output, cacheWrite, cacheRead, batchFactor, longContext?: { over, input, output } } } }`.
-- The plugin exports `anthropicPrices` with the 2026-11-10 numbers from ADR 0006, for sites that want them. It's data, dated, and never fetched.
+- The plugin exports `anthropicPrices` with the 2026-11-10 numbers from the cost ledger design, for sites that want them. It's data, dated, and never fetched.
 - An unknown model is priced at the table's most expensive row and flagged (`unknownModel`), so a new model can't hide spend.
 - `costOf(usage, model, table)` is exported, so the Console can recompute with its own copy of the table and compare.
 
@@ -151,13 +151,13 @@ type AiProvider = {
 
 ## Captive Origins
 
-- The Site lead's PR wraps its five callers (translate, consensus, watch, paper with formats, and Seed) in `withAiBudget`, with ADR 0006's caps, and closes K250.
+- The site's own change wraps its five callers (translate, consensus, watch, paper with formats, and Seed) in `withAiBudget`, with the caps from its cost ledger decision.
 - Seed's own `capUSD` stays, and both checks apply.
-- Seed World hears about `ai-usage` and `ai-budget-state` before the build (D8). Test data needs a month of made-up usage for the tour's Spend card.
+- The team that keeps the site's seed data hears about `ai-usage` and `ai-budget-state` before the build. Test data needs a month of made-up usage for the tour's Spend card.
 
 ## Open
 
-- **The Admin API cost report** (ADR 0006 section 5) stays the Console's job, since it needs the owner's Admin key.
+- **The Admin API cost report** stays the Console's job, since it needs the owner's Admin key.
 - **Whether the Console's Claude Code calls count:** they're on the Claude plan, not the API, so not here.
 
 ## Rough time

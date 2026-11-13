@@ -2,7 +2,7 @@ import type { ModelPrice, PriceTable, Usage } from './types.js'
 
 /**
  * Anthropic's prices on 2026-11-10, USD per million tokens, from https://platform.claude.com/docs/en/about-claude/pricing
- * (captive-origins-console ADR 0006). Data with a date: check it when prices change, and pass your own table if
+ * Data with a date: check it when prices change, and pass your own table if
  * you'd rather.
  */
 export const anthropicPrices: PriceTable = {
