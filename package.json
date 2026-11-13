@@ -1,0 +1,64 @@
+{
+  "name": "@extantape/payload-plugin-ai-budget",
+  "version": "0.1.0",
+  "description": "AI Budget for Payload: a ledger of every AI API call's tokens and cost, budgets per job, day and month that stop a job cleanly, and a clear pause when prepaid credits run out.",
+  "homepage": "https://github.com/ExtantApe/payload-plugin-ai-budget#readme",
+  "bugs": {
+    "url": "https://github.com/ExtantApe/payload-plugin-ai-budget/issues"
+  },
+  "keywords": [
+    "payload",
+    "payload-plugin",
+    "payloadcms",
+    "ai",
+    "monitoring",
+    "budget",
+    "cost-tracking",
+    "usage",
+    "anthropic",
+    "claude",
+    "llm"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ExtantApe/payload-plugin-ai-budget.git"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "leak-check": "bash scripts/leak-check.sh",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm test"
+  },
+  "peerDependencies": {
+    "payload": "^3.80.0"
+  },
+  "devDependencies": {
+    "@payloadcms/db-mongodb": "3.92.1",
+    "@types/node": "^24.0.0",
+    "graphql": "^16.14.2",
+    "mongodb-memory-server": "^11.3.0",
+    "payload": "3.92.1",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}
