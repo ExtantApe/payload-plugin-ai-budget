@@ -43,7 +43,7 @@ AI Budget for Payload: a ledger of every AI API call's tokens and cost, budgets 
 
 ## On its own, and with others
 
-**On its own:** wrap each AI call in `withAiBudget`, and give it caps, a price table, a provider and `access.manage`. Without Notifications, the credits-out notice goes to your `onCreditsOut`. It imports no other Captive Origins plugin.
+**On its own:** wrap each AI call in `withAiBudget`, and give it caps, a price table, a provider and `access.manage`. Without Notifications, the credits-out notice goes to your `onCreditsOut`. It doesn't depend on any other plugin.
 
 **Works with:**
 - **Notifications:** when it's installed, AI Budget registers its `ai-budget:credits-out` kind through `config.custom.notificationKinds` and sends the notice to the accounts in `notify` through `config.custom.notifications.notify`.

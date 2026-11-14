@@ -4,7 +4,7 @@ Status: **draft** (2026-11-10). Nothing is built yet.
 
 ## Context
 
-The platform's API cost ledger decision (2026-11-10) set out how Captive Origins records Claude API spend and stops jobs before they eat the month:
+The platform's API cost ledger decision (2026-11-10) set out how the first site records Claude API spend and stops jobs before they eat the month:
 - a ledger, one record per call;
 - caps per run, per job per day, per day and per month, checked before each call;
 - a dated price table;
@@ -149,7 +149,7 @@ type AiProvider = {
   - managers only;
   - API writes refused.
 
-## Captive Origins
+## The first site
 
 - The site's own change wraps its five callers (translate, consensus, watch, paper with formats, and Seed) in `withAiBudget`, with the caps from its cost ledger decision.
 - Seed's own `capUSD` stays, and both checks apply.
