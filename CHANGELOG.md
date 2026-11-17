@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-13)
 
 First version, from the platform's API cost ledger design and the owner's decision to make it a plugin: the ledger, caps that stop jobs cleanly and fail closed, dated prices with an Anthropic adapter, the credits-out pause with an hourly probe and one notice per run-out, the three-month auto-reload suggestion, the spend summary, and seeded test data that never counts toward a cap.
 

@@ -2,7 +2,7 @@
 
 AI Budget for Payload: a ledger of every AI API call's tokens and cost, budgets per job, day and month that stop a job cleanly, and a clear pause when prepaid credits run out.
 
-**Status:** 0.1.0, not on npm yet. 22 tests pass against Payload 3.92 with an in-memory MongoDB replica set, using fake answers shaped like Anthropic's (no real API is called). They cover the prices, the ledger, every cap, fail-closed reads, the credits-out pause and probe, the auto-reload suggestion, the summary and access. No site uses it yet.
+**Status:** 0.1.0 is on npm (2026-11-13). 22 tests pass against Payload 3.92 with an in-memory MongoDB replica set, using fake answers shaped like Anthropic's (no real API is called). They cover the prices, the ledger, every cap, fail-closed reads, the credits-out pause and probe, the auto-reload suggestion, the summary and access. No site uses it yet.
 
 ## What it does
 
