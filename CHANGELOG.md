@@ -3,6 +3,7 @@
 ## Unreleased
 
 - `anthropicProvider.isNoCredit` now reads the HTTP status and the error type before the message. Out of credit is a 402, a 4xx whose type is `billing_error`, or a 400 `invalid_request_error` whose message says the credit balance is too low. A 5xx, a network error, an error with no status and a thrown value that isn't an Error take the ordinary error path, so a message that only mentions credit or billing no longer pauses every job. An error thrown by your own code needs the status and the response body on it, as the provider's SDK gives them, to count as a run-out. Tested: 29 integration tests with fake errors shaped like the SDK's, 7 of them new, and 6 of those failed on the old code. Not tested: a real API call, a real out-of-credit answer from the provider, a real site.
+- Test audit after 0.1.0: 15 more tests, with no change to the plugin's code. They cover signed-out visitors, no updates or deletes through the API, the state collection's access, the ledger's fields, logs that carry no key or prompt, two more fail-closed reads, caps summed over many records, a $0 cap, the Notifications path with its fallbacks, the start-up warning, and the 75% and 90% marks. Tested: 44 integration tests in the suite, with fake answers and a stand-in for Notifications, and a one-line mutation of the source for each new test. Not tested: a real API call, the real Notifications plugin, a real site.
 
 ## 0.1.0 (2026-11-13)
 
