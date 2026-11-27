@@ -2,7 +2,7 @@
 
 AI Budget for Payload: a ledger of every AI API call's tokens and cost, budgets per job, day and month that stop a job cleanly, and a clear pause when prepaid credits run out.
 
-**Status:** 0.1.0 is on npm (2026-11-13). 22 tests pass against Payload 3.92 with an in-memory MongoDB replica set, using fake answers shaped like Anthropic's (no real API is called). They cover the prices, the ledger, every cap, fail-closed reads, the credits-out pause and probe, the auto-reload suggestion, the summary and access. No site uses it yet.
+**Status:** 0.1.0 is on npm (2026-11-13). 29 tests pass against Payload 3.92 with an in-memory MongoDB replica set, using fake answers shaped like Anthropic's (no real API is called). They cover the prices, the ledger, every cap, fail-closed reads, the credits-out pause and probe, which errors count as a run-out, the auto-reload suggestion, the summary and access. No site uses it yet.
 
 ## What it does
 
@@ -83,7 +83,7 @@ Caps, the price table and the suggestion ceiling are checked at start-up: no neg
 - **Overshoot:** two calls at the same moment can both pass the check, so a cap can be overshot by one call per worker running at once. On small models that's cents.
 - **Batches overshoot by the whole batch.** A batch is checked at its create, when its cost is unknown, and priced when its results arrive. A batch can go past a cap by everything in it, so size each batch under its job's run cap (translation: well under $1). `recordUsage` settles the create's unpriced record and skips results that errored, expired or were canceled.
 - **Summing:** each check reads the month's records. That's fine at thousands a month; at millions, it would need a running total.
-- **The credits-out error** is recognised by its message. If a provider changes the wording, the call fails as an ordinary error and is recorded as one, so check the ledger's `error` records after a provider change.
+- **The credits-out error** is recognised by its HTTP status and error type. For `anthropicProvider` that's a 402, a 4xx whose type is `billing_error`, or a 400 `invalid_request_error` whose message says the credit balance is too low. A 5xx, a network error, or an error thrown without a status and the response body fails as an ordinary error and is recorded as one, whatever its message says. If a provider changes its status, type or wording, a real run-out is recorded the same way, so check the ledger's `error` records after a provider change.
 - MongoDB only for now (conditional updates).
 
 ## Commands
