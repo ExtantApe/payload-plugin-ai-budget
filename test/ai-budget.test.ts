@@ -14,8 +14,10 @@ let payload: Payload
 let mongo: MongoMemoryReplSet
 const told: Doc[] = []
 const answer = (model = 'claude-haiku-5-5-20261101', input = 1000, output = 500, extra: Doc = {}) => async () => ({ model, usage: { input_tokens: input, output_tokens: output, ...extra }, content: [{ type: 'text', text: 'a private answer' }] })
+// An API error as the provider's SDK throws it: the HTTP status, and the response body under `error`.
+const apiError = (status: number | undefined, type: string, message: string) => Object.assign(new Error(`${status ?? ''} ${message}`.trim()), { status, error: { type: 'error', error: { type, message } } })
 const noCredit = async () => {
-  throw Object.assign(new Error('Your credit balance is too low to access the Anthropic API.'), { status: 400 })
+  throw apiError(400, 'invalid_request_error', 'Your credit balance is too low to access the Anthropic API.')
 }
 const ledger = async () => (await payload.find({ collection: 'ai-usage' as never, sort: 'at', pagination: false, depth: 0, overrideAccess: true })).docs as Doc[]
 const raw = () => (payload.db as unknown as { collections: Record<string, { collection: { deleteMany: (q: object) => Promise<unknown>; insertMany: (d: object[]) => Promise<unknown> } }> }).collections
@@ -190,6 +192,60 @@ describe('when the credits run out', () => {
     await withAiBudget(payload, { job: 'watch', run: run() }, noCredit).catch(() => undefined)
     expect(told[0]!.suggestMonthlyUSD).toBe(10) // $7.20 rounded up to the next $5
     expect(told[0]!.lastMonthUSD).toBeCloseTo(3)
+  })
+})
+
+describe('telling a run-out from any other error', () => {
+  const out = anthropicProvider.isNoCredit
+
+  it('reads a 402 as out of credit, whatever its message says', () => {
+    expect(out(apiError(402, 'api_error', 'Payment required.'))).toBe(true)
+    expect(out(Object.assign(new Error('Payment required.'), { status: 402 }))).toBe(true)
+  })
+
+  it("reads the provider's billing error type as out of credit", () => {
+    expect(out(apiError(403, 'billing_error', 'This account is on hold.'))).toBe(true)
+    // The same body, unwrapped.
+    expect(out(Object.assign(new Error('This account is on hold.'), { status: 403, error: { type: 'billing_error', message: 'This account is on hold.' } }))).toBe(true)
+  })
+
+  it('still reads the credit-balance 400 as out of credit', () => {
+    expect(out(apiError(400, 'invalid_request_error', 'Your credit balance is too low to access the Anthropic API.'))).toBe(true)
+  })
+
+  it('reads a 500 that mentions billing as an ordinary error, and pauses nothing', async () => {
+    const failing = apiError(500, 'api_error', 'The billing service could not take payment.')
+    expect(out(failing)).toBe(false)
+    expect(out(apiError(500, 'billing_error', 'Your credit balance is too low.'))).toBe(false)
+    expect(out(apiError(529, 'overloaded_error', 'Overloaded: insufficient credit capacity.'))).toBe(false)
+    expect(out(apiError(302, 'billing_error', 'Your credit balance is too low.'))).toBe(false) // only a 4xx can be a run-out
+    // Through the plugin: the caller gets the provider's own error, nobody is told, and the next call goes through.
+    await expect(withAiBudget(payload, { job: 'translate', run: run() }, async () => { throw failing })).rejects.toBe(failing)
+    expect(told).toHaveLength(0)
+    expect((await spendSummary(payload)).creditsOut).toBe(false)
+    expect((await ledger()).map((r) => r.refusal)).toEqual(['error'])
+    await expect(withAiBudget(payload, { job: 'translate', run: run() }, answer())).resolves.toBeTruthy()
+  })
+
+  it('reads a 400 of another type as an ordinary error, even when its message says insufficient credit', () => {
+    expect(out(apiError(400, 'api_error', 'Insufficient credit for this request.'))).toBe(false)
+    expect(out(apiError(400, 'invalid_request_error', 'messages.0: insufficient credit to the source is required.'))).toBe(false)
+    expect(out(apiError(400, 'api_error', 'Your credit balance is too low to access the Anthropic API.'))).toBe(false)
+    expect(out(apiError(429, 'rate_limit_error', 'Your credit balance is too low for this rate.'))).toBe(false)
+    expect(out(Object.assign(new Error('Your credit balance is too low.'), { status: 400 }))).toBe(false) // no type at all
+  })
+
+  it('reads a network error as an ordinary error', () => {
+    expect(out(Object.assign(new Error('Connection error: the billing service could not take payment.'), { code: 'ECONNRESET' }))).toBe(false)
+    expect(out(new TypeError('fetch failed'))).toBe(false)
+    expect(out(apiError(undefined, 'billing_error', 'Your credit balance is too low.'))).toBe(false) // no status
+  })
+
+  it('reads a thrown value that is not an Error as an ordinary error', () => {
+    expect(out({ message: 'Your credit balance is too low to access the Anthropic API.' })).toBe(false)
+    expect(out('insufficient credit')).toBe(false)
+    expect(out({ status: '402', message: 'insufficient credit' })).toBe(false) // a status that isn't a number
+    for (const thrown of [undefined, null, 0, 402, true, Symbol('x'), []]) expect(out(thrown)).toBe(false)
   })
 })
 

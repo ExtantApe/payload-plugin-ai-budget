@@ -2,9 +2,31 @@
 
 Kept by this repo's maintainers: after each feature or fix, and at least every 14 days while it changes. Newest first.
 
+## 2026-11-26: which errors count as a run-out
+
+A wrong read here pauses every job for up to an hour, tells the owner and counts the month as a run-out, so each refusal has its own test.
+
+| Promise | Test |
+| --- | --- |
+| A 402 is out of credit, whatever its message | `telling a run-out from any other error > reads a 402…` |
+| A 4xx with the `billing_error` type is out of credit, wrapped or unwrapped | `… > reads the provider's billing error type…` |
+| The credit-balance 400 `invalid_request_error` is still out of credit | `… > still reads the credit-balance 400…`, and every `when the credits run out` test through its fixture |
+| A 5xx is an ordinary error whatever it says: nothing pauses, nobody is told, the ledger records `error`, the next call runs | `… > reads a 500 that mentions billing…` |
+| A 4xx with matching text and another type, or no type, is an ordinary error | `… > reads a 400 of another type…` |
+| A network error, or any error with no status, is an ordinary error | `… > reads a network error…` |
+| A thrown string, plain object or other value is an ordinary error | `… > reads a thrown value that is not an Error…` |
+
+Six of the seven failed on the old code, which matched on the message alone. The credit-balance 400 test passed before and after: it keeps the shape the plugin already handled.
+
+Mutation check: 6 guards in `isNoCredit` (the 5xx bound, the 4xx floor, the 402, the billing type, the 400's status and type, the missing status). Five were caught at once; the 4xx floor was caught after an assertion was added (a 302 with the billing type).
+
+Gaps skipped: a real out-of-credit answer from the provider (it needs an account with no credit). The shapes come from the provider's published error types and the 400 the code already handled, so check the ledger's `error` records after a provider change.
+
 ## 2026-11-26: sweep after 0.1.0
 
 Every promise in the README and `docs/decisions.md` was listed and matched to a test in `test/ai-budget.test.ts`. The suite went from 22 tests to 37. Nothing in `src/` changed.
+
+Merged on 2026-11-27 with the run-out fix described above: the suite is 44 tests, and all of them pass on the fixed code. The mutation check below ran before that merge.
 
 - **Promises:**
   - Refusals before the call: a job that isn't in the caps, a call with no run id, each of the four caps with the tightest winning, credits out, and a ledger or state that can't be read.
